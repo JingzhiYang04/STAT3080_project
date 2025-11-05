@@ -1,0 +1,237 @@
+---
+title: "Project Part 1" 
+fontsize: 12pt
+geometry: margin=1in
+urlcolor: black
+output: pdf_document
+header-includes:
+- \usepackage{setspace}
+- \onehalfspacing
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 4.5, fig.height = 3.0, fig.align = "center")
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(tidyr)
+library(scales)
+```
+
+## Introduction
+
+Quality of life varies widely across U.S. states and continues to shape how policymakers and researchers think about inequality. It reflects how social, economic, and environmental factors shape well-being and determine opportunities for individuals and communities. Understanding these differences helps identify where resources and opportunities are unevenly distributed and guides efforts to promote more balanced regional growth.
+
+This project examines how economic conditions and healthcare access relate to life expectancy. Life expectancy is an important indicator of overall well-being. Also known as life expectancy at birth, it is defined by the U.S. government as the projected average age of death for people born today, based on current age-specific death rates. The term provides a comprehensive measure of health outcomes and resource accessibility across populations (Saito et al., 2014).
+
+Economic indicators such as personal consumption expenditures and median household income provide additional dimensions of quality of life. States with higher income or spending levels often have greater access to healthcare, education, and community infrastructure (Chetty et al., 2016). Meanwhile, healthcare accessibility, reflected in medical enrollment rates, plays a central role in maintaining population health and longevity. By examining these variables, this project provides insight into the socioeconomic and healthcare factors that contribute to better living conditions.
+
+This report examines three main research questions:
+
+- Do states with higher average life expectancy (LE) exhibit higher median household income in 2021?
+- Do states with higher per-capita personal consumption expenditures (PCE) demonstrate higher life expectancy in 2021?
+- Do states with higher medical enrollment rates (healthcare access) tend to have higher life expectancy in 2021?
+
+These questions are relevant in the context of post-pandemic recovery, where economic stability, healthcare access, and social resilience have become central to policy discussions. Exploring how these factors vary across states provides valuable insights into the structural conditions that sustain or limit quality of life in the United States.
+
+## Data Summary
+
+This project uses publicly available state-level data from four reliable primary sources. Each dataset covers the entire population of U.S. states and the District of Columbia in 2021.
+
+Life expectancy data come from the U.S. State Life Expectancy by Sex 2021 dataset. The dataset was created by the National Center for Health Statistics (NCHS) under the Centers for Disease Control and Prevention (CDC). The CDC calculates life expectancy using age-specific death rates from national mortality files. The estimates represent a complete and trusted view of population health across states.
+
+Per capita personal consumption expenditure data come from the Bureau of Economic Analysis (BEA). The BEA’s Personal Consumption Expenditures by State 2021 report provides measures of average annual spending per person. This indicator reflects economic activity and consumer behavior. The BEA collects data from national administrative and survey sources. Therefore, the consistency and data quality is ensured across all states.
+
+Median household income data come from the U.S. Census Bureau’s American Community Survey (ACS) 2021 release. The ACS gathers demographic and economic information nationwide through probability sampling. It produces population-level estimates by applying statistical weighting. Median household income is a key measure of economic well-being and is widely used for comparing state-level living standards.
+
+Medical enrollment data come from the Kaiser Family Foundation (KFF). The data are drawn from official Medicare records maintained by the Centers for Medicare & Medicaid Services (CMS). The Total Medicare Beneficiaries by State dataset reports the number of people enrolled in Medicare in each state. These enrollment figures reflect access to healthcare among all groups of people, including older adults and people with disabilities.
+
+All four datasets were cleaned and combined into a CSV dataset. State names were standardized to ensure alignment. Symbols such as dollar signs and commas were removed. Columns were renamed for consistency and clarity. The dataset was restricted to data from 2021, and no further adjustments were made to the numeric values.
+
+There are some small differences between sources. For example, the CDC and BEA define their reporting periods differently, and the ACS uses survey-based estimates. These differences may introduce small variations in comparison. However, because all data are reported at the state level and produced by national agencies, the results remain valid for descriptive analysis.
+
+The compiled dataset is appropriate for answering all three research questions. Life expectancy measures overall health outcomes. Median household income and per-capita expenditures measure economic prosperity. Medicare enrollment captures access to healthcare services. Therefore, these indicators provide a balanced picture of how health, economic conditions, and healthcare access shape quality of life across U.S. states.
+
+## Data Dictionary
+
+```{r data-dictionary, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+
+data_dictionary <- data.frame(
+"Variable Name" = c(
+"State",
+"Life Expectancy (LE)",
+"Per-Capita Personal Consumption Expenditures (PCE)",
+"Median Household Income",
+"Medical Enrollment",
+"PCE Quintile",
+"Income Rank",
+"PCE Rank"
+),
+"Description" = c(
+"The name of each U.S. state and the District of Columbia. It identifies geographic location and serves as the unit of comparison.",
+"The estimated average number of years a person born in 2021 is expected to live. Reported in years. Produced by the Centers for Disease Control and Prevention (CDC).",
+"The average annual amount of money spent per person in each state during 2021. Reported in U.S. dollars. Provided by the Bureau of Economic Analysis (BEA).",
+"The midpoint household income in each state during 2021. Reported in U.S. dollars. Half of households earn above this level and half below. Data from the U.S. Census Bureau’s American Community Survey (ACS).",
+"The total number of Medicare beneficiaries enrolled in 2021. Reported as a count of individuals per state. Provided by the Kaiser Family Foundation (KFF) using CMS records.",
+"A categorical variable dividing states into five groups (Q1–Q5) based on their PCE values. Q1 represents the lowest expenditures and Q5 represents the highest.",
+"A ranking variable showing each state’s position from 1 (highest median income) to 51 (lowest). Derived from median household income values.",
+"A ranking variable showing each state’s position from 1 (highest per-capita PCE) to 51 (lowest). Derived from PCE values."
+)
+)
+
+kable(data_dictionary,
+col.names = c("Variable Name", "Description"))
+```
+
+## Data Exploration
+
+```{r, warning=FALSE, message=FALSE}
+dollar_compact <- label_number(prefix = "$", accuracy = 0.1, scale_cut = cut_si("k"))
+theme_min <- theme_minimal(base_size = 10) +
+theme(plot.title.position = "plot",
+plot.caption = element_text(color = "grey40"),
+panel.grid.minor = element_blank())
+
+# read the cleaned CSV
+blob_url <- "https://github.com/JingzhiYang04/STAT3080_project/blob/main/project_dataset_cleaned.csv"
+raw_url  <- sub("github.com", "raw.githubusercontent.com", sub("/blob/", "/", blob_url))
+dat <- read_csv(raw_url, show_col_types = FALSE)
+
+# standardize numeric fields
+num_cols <- intersect(
+c("le","pce","median_household_income","medical_enrollment","income_rank","pce_rank"),
+names(dat)
+)
+dat <- dat %>% mutate(across(all_of(num_cols),
+~ if (is.character(.x)) readr::parse_number(.x) else as.numeric(.x)))
+
+# order PCE quintile
+if ("pce_quintile" %in% names(dat)) {
+levs <- paste0("Q", 1:5)
+dat <- dat %>% mutate(pce_quintile = factor(pce_quintile, levels = levs, ordered = TRUE))
+}
+```
+
+### Summary A: Life Expectancy vs Median Income
+```{r, warning=FALSE, message=FALSE}
+m1 <- lm(le ~ median_household_income, data = dat)
+ggplot(dat, aes(x = median_household_income, y = le)) +
+geom_point(alpha = 0.9) +
+geom_smooth(method = "lm", se = TRUE) +
+scale_x_continuous(labels = dollar_compact) +
+labs(title = "Life expectancy at birth vs. median household income (2021)",
+subtitle = "Richer states tend to live longer.",
+x = "Median household income (USD)", y = "Life expectancy (years)",
+caption = sprintf("Slope = %.6f R² = %.3f", coef(m1)[2], summary(m1)$r.squared)) +
+theme_min
+```
+
+### Summary B: Life Expectancy vs Per-capita PCE
+```{r, warning=FALSE, message=FALSE}
+m2 <- lm(le ~ pce, data = dat)
+ggplot(dat, aes(x = pce, y = le)) +
+geom_point(alpha = 0.9) +
+geom_smooth(method = "lm", se = TRUE) +
+scale_x_continuous(labels = dollar_compact) +
+labs(title = "Life expectancy vs. per-capita PCE (2021)",
+subtitle = "Higher spending states tend to show higher life expectancy.",
+x = "Per-capita PCE (USD)", y = "Life expectancy (years)",
+caption = sprintf("Slope = %.6f   R² = %.3f", coef(m2)[2], summary(m2)$r.squared)) +
+theme_min
+```
+
+### Summary C: Mean LE by PCE Quintile
+```{r, warning=FALSE, message=FALSE}
+if ("pce_quintile" %in% names(dat)) {
+dat %>%
+filter(!is.na(pce_quintile)) %>%
+group_by(pce_quintile) %>%
+summarise(n = n(),
+mean_le = mean(le, na.rm = TRUE),
+se_le = sd(le, na.rm = TRUE)/sqrt(n),
+.groups = "drop") %>%
+ggplot(aes(x = pce_quintile, y = mean_le, group = 1)) +
+geom_line() +
+geom_point(size = 2) +
+geom_errorbar(aes(ymin = mean_le - se_le, ymax = mean_le + se_le), width = 0.08) +
+labs(title = "Life expectancy increases across PCE quintiles",
+subtitle = "Points: mean LE; bars: ±1 SE",
+x = "PCE quintile (Q1 = lowest … Q5 = highest)", y = "Mean life expectancy (years)") +
+theme_min
+}
+```
+
+### Summary D: Income Rank vs Life Expectancy
+```{r, warning=FALSE, message=FALSE}
+ggplot(dat, aes(x = income_rank, y = le)) +
+geom_point(alpha = 0.9) +
+geom_smooth(method = "lm", se = TRUE) +
+scale_x_reverse() +
+labs(title = "Rank–Rank association: richer states live longer",
+subtitle = "Lower rank = higher income. Axis reversed for readability.",
+x = "Income rank (1 = highest income … 51 = lowest)", y = "Life expectancy (years)") +
+theme_min
+```
+
+### Summary E: Distributions (LE, Income, PCE)
+```{r, warning=FALSE, message=FALSE}
+dist_long <- dat %>%
+select(`Life Expectancy (years)` = le,
+`Median Household Income (USD)` = median_household_income,
+`Per-capita PCE (USD)` = pce) %>%
+pivot_longer(everything(), names_to = "metric", values_to = "value")
+
+stats_df <- dist_long %>%
+group_by(metric) %>%
+summarise(mu = mean(value, na.rm = TRUE),
+sd = sd(value, na.rm = TRUE), .groups = "drop")
+
+ggplot(dist_long, aes(value)) +
+geom_histogram(bins = 18, alpha = 0.85) +
+facet_wrap(~ metric, scales = "free") +
+geom_vline(data = stats_df, aes(xintercept = mu), linetype = 2) +
+geom_text(data = stats_df,
+aes(x = mu, y = Inf, label = sprintf("Mean = %.2f\nSD = %.2f", mu, sd)),
+vjust = 1.1, size = 3) +
+labs(title = "Distributions of key variables (2021)",
+x = NULL, y = "Count",
+caption = "Dashed line = mean") +
+theme_min
+```
+
+## Conclusions
+
+The above graphs show clear and consistent patterns between income, spending, and life expectancy across U.S. states. Summary A shows that states with higher median household income have higher life expectancy. The upward trend and an \( R^2 \) of about 0.66 indicate that income explains much of the variation in life expectancy across states. For instance, New York, Iowa, and North Dakota are relatively long-lived given their income levels, while the District of Columbia, Alaska, and Tennessee fall below, showing lower life expectancy than their income would predict. Summary B extends this relationship by showing that states with higher per-capita personal consumption expenditure (PCE) also live longer. However, the \( R^2 \) value of about 0.28 suggests a weaker connection, possibly reflecting regional differences in cost of living. Moving to Summary C, the plot of PCE quintiles reveals a steady increase in average life expectancy from lower- to higher-spending groups. It reinforces the idea that greater economic well-being supports longer lives. Summary D further supports this idea by comparing income rank and life expectancy, showing that richer states (with lower rank numbers) consistently achieve higher life expectancy. Moreover, Summary E examines the distributions of life expectancy, income, and spending. Life expectancy clusters around 76 years, while income and PCE vary more widely, suggesting that although economic inequality is large, health differences remain more moderate but still linked to wealth. 
+
+Overall, these visual patterns reveal that higher economic prosperity is strongly associated with better health outcomes across the United States. States with higher income and higher spending also have higher life expectancy. Income and spending are both positively related to health outcomes, though income has the stronger effect. Medicare enrollment does not show a clear connection, likely because it reflects population age and disability rather than overall healthcare access.
+
+This project highlights that economic well-being plays an important role in public health. States with stronger economies tend to provide better living conditions and longer lives for their residents. In the future, research could include more recent data or additional health indicators. For example, medicare enrollment was used here only as a rough indicator for healthcare access. Though it reflects how many residents, particularly older adults, are covered, it does not fully capture access or quality of care. Incorporating broader measures such as uninsured rates, literacy levels, environmental conditions, or healthcare quality could further explain the remaining differences in life expectancy across states.
+
+\newpage
+## Data Appendix
+### First 15 rows of the compiled dataset (2021).
+
+```{r, warning=FALSE, message=FALSE}
+knitr::kable(
+head(dat, 20),
+align = "c",
+booktabs = TRUE
+)
+```
+
+\newpage
+## References
+### Background Research
+Chetty, R., Stepner, M., Abraham, S., Lin, S., Scuderi, B., Turner, N., Bergeron, A., & Cutler, D. (2016). *The Association between Income and Life Expectancy in the United States, 2001–2014.* JAMA, 315(16), 1750–1766. https://doi.org/10.1001/jama.2016.4226
+
+Saito, Y., Robine, J., & Crimmins, E. M. (2014). *The methods and materials of health expectancy.* HAL (Le Centre Pour La Communication Scientifique Directe), 30(3), 209–223. https://doi.org/10.3233/sji-140840
+
+### Primary Sources
+Guzman, G. (2022). *Household Income: 2021.* American Community Survey Briefs (ACSBR-011). U.S. Census Bureau. https://www.census.gov/content/dam/Census/library/publications/2022/acs/acsbr-011.pdf
+
+Kaiser Family Foundation. (2025, September 11). *Total number of Medicare beneficiaries by type of coverage.* KFF State Health Facts. https://www.kff.org/medicare/state-indicator/total-medicare-beneficiaries
+
+U.S. Bureau of Economic Analysis. (2021). *Personal Consumption Expenditures by State, 2021.* https://www.bea.gov/news/2022/personal-consumption-expenditures-state-2021
+
+U.S. Department of Health and Human Services. (2025, April 23). *U.S. State life expectancy by sex, 2021.* Data.gov. https://catalog.data.gov/dataset/u-s-state-life-expectancy-by-sex-2021
