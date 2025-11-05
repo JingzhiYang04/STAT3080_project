@@ -1,1 +1,7 @@
 # STAT3080_project
+
+The quality of life across different states in the United States continues to draw the attention of policymakers, researchers, and the public. It reflects how social, economic, and environmental factors shape well-being and determine opportunities for individuals and communities. Understanding these differences helps identify inequities in access to resources and informs strategies to promote more balanced growth across regions.
+
+This project examines how economic conditions and healthcare access relate to life expectancy, an important indicator of overall well-being. Life expectancy, also called life expectancy at birth, is defined by the U.S. government as the projected average age of death for people born today, based on current age-specific death rates. It provides a comprehensive measure of health outcomes and resource accessibility across populations (Saito et al., 2014).
+
+Economic indicators such as personal consumption expenditures and median household income provide additional dimensions of quality of life. States with higher income or spending levels often have greater access to healthcare, education, and community infrastructure (Chetty et al., 2016). Meanwhile, healthcare accessibility, reflected in medical enrollment rates, plays a central role in maintaining population health and longevity. By examining how these variables interact, this project provides insight into the socioeconomic and healthcare factors that contribute to better living conditions.
