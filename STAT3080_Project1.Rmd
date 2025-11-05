@@ -199,14 +199,44 @@ x = NULL, y = "Count",
 caption = "Dashed line = mean") +
 theme_min
 ```
+### Summary F: Correlation Heatmap
+
+```{r plot_corr_heatmap, echo=FALSE}
+numdat <- dat |>
+select(where(is.numeric)) |>
+rename(
+LE          = le,
+Income      = median_household_income,
+PCE         = pce,
+MedicareEnr = medical_enrollment,
+IncomeRank  = income_rank,
+PCERank     = pce_rank
+)
+
+cor_mat <- round(cor(numdat, use = "pairwise.complete.obs"), 2)
+cor_df  <- as.data.frame(as.table(cor_mat))
+names(cor_df) <- c("var1", "var2", "corr")
+
+heatmap <- ggplot(cor_df, aes(var1, var2, fill = corr)) +
+geom_tile() +
+geom_text(aes(label = sprintf("%.2f", corr)), size = 3) +
+scale_fill_gradient2(limits = c(-1, 1), oob = scales::squish) +
+labs(
+title = "Correlation Matrix of Key Variables (2021)",
+x = NULL, y = NULL, fill = "r"
+) +
+theme_min +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+heatmap
+```
 
 ## Conclusions
 
-The above graphs show clear and consistent patterns between income, spending, and life expectancy across U.S. states. Summary A shows that states with higher median household income have higher life expectancy. The upward trend and an \( R^2 \) of about 0.66 indicate that income explains much of the variation in life expectancy across states. For instance, New York, Iowa, and North Dakota are relatively long-lived given their income levels, while the District of Columbia, Alaska, and Tennessee fall below, showing lower life expectancy than their income would predict. Summary B extends this relationship by showing that states with higher per-capita personal consumption expenditure (PCE) also live longer. However, the \( R^2 \) value of about 0.28 suggests a weaker connection, possibly reflecting regional differences in cost of living. Moving to Summary C, the plot of PCE quintiles reveals a steady increase in average life expectancy from lower- to higher-spending groups. It reinforces the idea that greater economic well-being supports longer lives. Summary D further supports this idea by comparing income rank and life expectancy, showing that richer states (with lower rank numbers) consistently achieve higher life expectancy. Moreover, Summary E examines the distributions of life expectancy, income, and spending. Life expectancy clusters around 76 years, while income and PCE vary more widely, suggesting that although economic inequality is large, health differences remain more moderate but still linked to wealth. 
+The above graphs show clear and consistent patterns between income, spending, and life expectancy across U.S. states. Summary A shows that states with higher median household income have higher life expectancy. The upward trend and an \( R^2 \) of about 0.66 indicate that income explains much of the variation in life expectancy across states. For instance, New York, Iowa, and North Dakota are relatively long-lived given their income levels, while the District of Columbia, Alaska, and Tennessee fall below, showing lower life expectancy than their income would predict. Summary B extends this relationship by showing that states with higher per-capita personal consumption expenditure (PCE) also live longer. However, the \( R^2 \) value of about 0.28 suggests a weaker connection, possibly reflecting regional differences in cost of living. Moving to Summary C, the plot of PCE quintiles reveals a steady increase in average life expectancy from lower- to higher-spending groups. It reinforces the idea that greater economic well-being supports longer lives. Summary D further supports this idea by comparing income rank and life expectancy, showing that richer states (with lower rank numbers) consistently achieve higher life expectancy. Summary E then examines the distributions of life expectancy, income, and spending. Life expectancy clusters around 76 years, while income and PCE vary more widely, suggesting that although economic inequality is large, health differences remain more moderate but still linked to wealth. Finally, Finally, Summary F’s correlation heatmap quantifies these visual relationships. It shows a strong positive correlation between life expectancy and both income ($r \approx 0.81$) and PCE ($r \approx 0.53$), and equally strong negative correlations with income and PCE ranks ($r \approx -0.82$ and $r \approx -0.71$). These numerical associations confirm the patterns about conomic prosperity is the most consistent predictor of state-level longevity. Medicare enrollment does not show a clear ccorrelation, likely because it reflects population age and disability rather than overall healthcare access.
 
-Overall, these visual patterns reveal that higher economic prosperity is strongly associated with better health outcomes across the United States. States with higher income and higher spending also have higher life expectancy. Income and spending are both positively related to health outcomes, though income has the stronger effect. Medicare enrollment does not show a clear connection, likely because it reflects population age and disability rather than overall healthcare access.
+Overall, this project highlights that economic well-being plays an important role in public health. Higher economic prosperity is closely tied to better health outcomes across the United States. States with stronger economies provide better living conditions and longer lives for their residents.
 
-This project highlights that economic well-being plays an important role in public health. States with stronger economies tend to provide better living conditions and longer lives for their residents. In the future, research could include more recent data or additional health indicators. For example, medicare enrollment was used here only as a rough indicator for healthcare access. Though it reflects how many residents, particularly older adults, are covered, it does not fully capture access or quality of care. Incorporating broader measures such as uninsured rates, literacy levels, environmental conditions, or healthcare quality could further explain the remaining differences in life expectancy across states.
+In the future, research could include more recent data or additional health indicators. For example, medicare enrollment was used here only as a rough indicator for healthcare access. Though it reflects how many residents, particularly older adults, are covered, it does not fully capture access or quality of care. Incorporating broader measures such as uninsured rates, literacy levels, environmental conditions, or healthcare quality could further explain the remaining differences in life expectancy across states.
 
 \newpage
 ## Data Appendix
